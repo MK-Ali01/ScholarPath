@@ -1,4 +1,3 @@
-// app/components/IntakeForm.tsx
 'use client';
 
 import { useState } from 'react';
@@ -28,7 +27,7 @@ export function IntakeForm() {
     try {
       const res = await fetch(process.env.NEXT_PUBLIC_N8N_INTAKE_WEBHOOK_URL!, {
         method: 'POST',
-        body: formData, // do NOT set Content-Type manually — browser sets the multipart boundary
+        body: formData,
       });
       const data = await res.json();
 
@@ -88,4 +87,4 @@ export function IntakeForm() {
       {status === 'success' && <p className="success-flag">Candidate submitted — check the pipeline log below.</p>}
     </form>
   );
-}/
+}
