@@ -1,4 +1,5 @@
 import { getServerSupabase } from '@/lib/supabase-server';
+import { IntakeForm } from './components/IntakeForm';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +64,19 @@ const STATUS_LABEL: Record<string, string> = {
   papers_found: 'Research papers found',
   failed: 'Failed — needs review',
 };
+
+// Safety-net dedupe — keeps the first occurrence of each key.
+// Root cause (duplicate inserts from n8n retries) should still be fixed
+// at the database layer with unique constraints; this just protects the UI.
+function dedupeBy<T>(items: T[], key: (item: T) => string): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const k = key(item);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
 
 async function getProfiles(): Promise<Profile[]> {
   const supabase = getServerSupabase();
@@ -131,131 +145,145 @@ export default async function DashboardPage() {
         </p>
       </header>
 
+      <IntakeForm />
+
       {profiles.length === 0 ? (
         <p className="empty">
           No runs yet. Submit the intake form to see a candidate here.
         </p>
       ) : (
         <div className="runs">
-          {profiles.map((p) => (
-            <article key={p.id} className="run-card">
-              <div className="run-header">
-                <h2>@{p.github_username}</h2>
+          {profiles.map((p) => {
+            const uniqueScholarshipMatches = dedupeBy(
+              p.scholarship_matches ?? [],
+              (m) => m.scholarships.name
+            );
 
-                <span className={`status status-${p.status}`}>
-                  {STATUS_LABEL[p.status] ?? p.status}
-                </span>
-              </div>
+            return (
+              <article key={p.id} className="run-card">
+                <div className="run-header">
+                  <h2>@{p.github_username}</h2>
 
-              {p.structured_profile ? (
-                <div className="profile-block">
-                  {p.structured_profile.extraction_notes && (
-                    <p className="notes">
-                      ⚠ {p.structured_profile.extraction_notes}
-                    </p>
-                  )}
-
-                  {p.structured_profile.skills &&
-                    p.structured_profile.skills.length > 0 && (
-                      <div className="tags">
-                        {p.structured_profile.skills
-                          .slice(0, 8)
-                          .map((s) => (
-                            <span key={s} className="tag">
-                              {s}
-                            </span>
-                          ))}
-                      </div>
-                    )}
+                  <span className={`status status-${p.status}`}>
+                    {STATUS_LABEL[p.status] ?? p.status}
+                  </span>
                 </div>
-              ) : (
-                <p className="pending-text">
-                  Profile extraction pending…
-                </p>
-              )}
 
-              {p.domain_recommendations &&
-                p.domain_recommendations.length > 0 && (
-                  <div className="domains">
-                    {[...p.domain_recommendations]
-                      .sort((a, b) => a.rank - b.rank)
-                      .map((d) => (
-                        <div key={d.id} className="domain-row">
-                          <span className="domain-rank">
-                            {d.rank}
-                          </span>
+                {p.structured_profile ? (
+                  <div className="profile-block">
+                    {p.structured_profile.extraction_notes && (
+                      <p className="notes">
+                        ⚠ {p.structured_profile.extraction_notes}
+                      </p>
+                    )}
 
-                          <div>
-                            <div className="domain-name">
-                              {d.domain}
-                            </div>
-
-                            <p className="domain-reasoning">
-                              {d.reasoning}
-                            </p>
-
-                            {d.papers && d.papers.length > 0 && (
-                              <div className="papers">
-                                {d.papers.map((paper) => (
-                                  <div
-                                    key={paper.id}
-                                    className="paper-row"
-                                  >
-                                    <div className="paper-head">
-                                      <a
-                                        href={paper.url ?? '#'}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="paper-title"
-                                      >
-                                        {paper.title}
-                                      </a>
-
-                                      {paper.relevance_confidence && (
-                                        <span
-                                          className={`confidence confidence-${paper.relevance_confidence}`}
-                                        >
-                                          {paper.relevance_confidence}
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    {paper.plain_summary && (
-                                      <p className="paper-summary">
-                                        {paper.plain_summary}
-                                      </p>
-                                    )}
-
-                                    <span className="paper-meta">
-                                      {paper.source === 'openalex'
-                                        ? 'OpenAlex'
-                                        : paper.source === 'semantic_scholar'
-                                          ? 'Semantic Scholar'
-                                          : paper.source === 'arxiv'
-                                            ? 'arXiv'
-                                            : paper.source}
-                                      {paper.publication_year
-                                        ? ` · ${paper.publication_year}`
-                                        : ''}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                    {p.structured_profile.skills &&
+                      p.structured_profile.skills.length > 0 && (
+                        <div className="tags">
+                          {p.structured_profile.skills
+                            .slice(0, 8)
+                            .map((s) => (
+                              <span key={s} className="tag">
+                                {s}
+                              </span>
+                            ))}
                         </div>
-                      ))}
+                      )}
                   </div>
+                ) : (
+                  <p className="pending-text">
+                    Profile extraction pending…
+                  </p>
                 )}
 
-              {p.scholarship_matches &&
-                p.scholarship_matches.length > 0 && (
+                {p.domain_recommendations &&
+                  p.domain_recommendations.length > 0 && (
+                    <div className="domains">
+                      {[...p.domain_recommendations]
+                        .sort((a, b) => a.rank - b.rank)
+                        .map((d) => {
+                          const uniquePapers = dedupeBy(
+                            d.papers ?? [],
+                            (paper) => paper.url ?? paper.id
+                          );
+
+                          return (
+                            <div key={d.id} className="domain-row">
+                              <span className="domain-rank">
+                                {d.rank}
+                              </span>
+
+                              <div>
+                                <div className="domain-name">
+                                  {d.domain}
+                                </div>
+
+                                <p className="domain-reasoning">
+                                  {d.reasoning}
+                                </p>
+
+                                {uniquePapers.length > 0 && (
+                                  <div className="papers">
+                                    {uniquePapers.map((paper) => (
+                                      <div
+                                        key={paper.id}
+                                        className="paper-row"
+                                      >
+                                        <div className="paper-head">
+                                          <a
+                                            href={paper.url ?? '#'}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="paper-title"
+                                          >
+                                            {paper.title}
+                                          </a>
+
+                                          {paper.relevance_confidence && (
+                                            <span
+                                              className={`confidence confidence-${paper.relevance_confidence}`}
+                                            >
+                                              {paper.relevance_confidence}
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        {paper.plain_summary && (
+                                          <p className="paper-summary">
+                                            {paper.plain_summary}
+                                          </p>
+                                        )}
+
+                                        <span className="paper-meta">
+                                          {paper.source === 'openalex'
+                                            ? 'OpenAlex'
+                                            : paper.source === 'semantic_scholar'
+                                              ? 'Semantic Scholar'
+                                              : paper.source === 'arxiv'
+                                                ? 'arXiv'
+                                                : paper.source}
+                                          {paper.publication_year
+                                            ? ` · ${paper.publication_year}`
+                                            : ''}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+
+                {uniqueScholarshipMatches.length > 0 && (
                   <div className="scholarships">
                     <h3 className="section-label">
                       Scholarship Matches
                     </h3>
 
-                    {[...p.scholarship_matches]
+                    {[...uniqueScholarshipMatches]
                       .sort((a, b) => {
                         const order = {
                           high: 0,
@@ -324,11 +352,12 @@ export default async function DashboardPage() {
                   </div>
                 )}
 
-              <time className="timestamp">
-                {new Date(p.created_at).toLocaleString()}
-              </time>
-            </article>
-          ))}
+                <time className="timestamp">
+                  {new Date(p.created_at).toLocaleString()}
+                </time>
+              </article>
+            );
+          })}
         </div>
       )}
     </main>
