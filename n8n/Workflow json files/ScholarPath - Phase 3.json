@@ -1,0 +1,479 @@
+{
+  "name": "ScholarPath - Phase 3",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1424,
+        80
+      ],
+      "id": "89779b64-767e-4092-a532-e68f94ebfe13",
+      "name": "Manual Trigger (swap for real trigger later)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "profile-id-assign",
+              "name": "profile_id",
+              "value": "ad7b7b9b-6e20-44c3-a204-63a926f8e05f",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1232,
+        80
+      ],
+      "id": "599d6391-6756-405d-ad81-b0a3c51ac712",
+      "name": "Set Test Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "const domainItem = $('Get Domain Recommendation').first();\nconst profileItem = $('Get Profile').first();\nconst domain = (domainItem.json.domain || '').toLowerCase();\nconst scholarships = $input.all().map(i => i.json);\n\nconst matched = scholarships.filter(s => {\n  const tags = s.domain_tags || [];\n  if (tags.includes('all')) return true;\n  return tags.some(tag => domain.includes(String(tag).toLowerCase()) || String(tag).toLowerCase().includes(domain));\n});\n\nreturn matched.map(s => ({\n  json: {\n    ...s,\n    profile_id: profileItem.json.id,\n    candidate_country: profileItem.json.candidate_country,\n    structured_profile: profileItem.json.structured_profile,\n    domain: domainItem.json.domain,\n    domain_recommendation_id: domainItem.json.id\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        80
+      ],
+      "id": "e93f2f01-1e6b-41fa-86e5-dea362df1772",
+      "name": "Code: Filter by Domain Tags"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        240,
+        48
+      ],
+      "id": "440bdbc6-e2af-4c11-8072-aa790badfe66",
+      "name": "Loop Over Scholarships"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        -16
+      ],
+      "id": "b7cfef52-1d9c-4518-8a1e-c941b46bff80",
+      "name": "Wait (pacing)",
+      "webhookId": "n8-wait-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: `You are evaluating whether a specific scholarship is a good match for this candidate, based on their profile and the scholarship's eligibility rules.\\n\\nYou are NOT authorized to confirm nationality/country eligibility. Always note country eligibility as unverified unless explicitly told the candidate's country was already checked against the list.\\n\\nBe conservative. If eligibility depends on something the profile doesn't state, say so explicitly rather than assuming a favorable answer.\\n\\nReturn ONLY valid JSON, no markdown fences:\\n{\\n  \\\"match_confidence\\\": \\\"high | medium | low\\\",\\n  \\\"match_reasoning\\\": \\\"string\\\",\\n  \\\"unmet_or_unclear_criteria\\\": [\\\"string\\\"]\\n}\\n\\nCANDIDATE PROFILE: ${JSON.stringify($json.structured_profile)}\\nCANDIDATE STATED COUNTRY: ${$json.candidate_country || 'NOT PROVIDED - flag as unverified'}\\nSCHOLARSHIP: ${$json.name}\\nELIGIBILITY SUMMARY: ${$json.eligibility_summary}\\nDEADLINE: ${$json.deadline_text}` }] }] }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        80
+      ],
+      "id": "699c8f0c-d874-4603-b935-a5ee9e80da11",
+      "name": "LLM: Evaluate Scholarship Match",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GmARygcg2M2pbVZ9",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const raw = $input.first().json.candidates[0].content.parts[0].text;\n  const cleaned = raw.replace(/```json|```/g, '').trim();\n  const parsed = JSON.parse(cleaned);\n  return [{ json: { ...parsed, _parse_ok: true } }];\n} catch (err) {\n  return [{ json: { _parse_ok: false, error: err.message } }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        80
+      ],
+      "id": "801380a0-e3df-4d3d-beec-68b86edfbe92",
+      "name": "Code: Parse LLM JSON"
+    },
+    {
+      "parameters": {
+        "tableId": "scholarship_matches",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "profile_id",
+              "fieldValue": "={{ $('Loop Over Scholarships').item.json.profile_id }}"
+            },
+            {
+              "fieldId": "scholarship_id",
+              "fieldValue": "={{ $('Loop Over Scholarships').item.json.id }}"
+            },
+            {
+              "fieldId": "domain_recommendation_id",
+              "fieldValue": "={{ $('Loop Over Scholarships').item.json.domain_recommendation_id }}"
+            },
+            {
+              "fieldId": "match_confidence",
+              "fieldValue": "={{ $json.match_confidence || 'low' }}"
+            },
+            {
+              "fieldId": "match_reasoning",
+              "fieldValue": "={{ $json.match_reasoning || 'LLM response could not be parsed - needs manual review' }}"
+            },
+            {
+              "fieldId": "country_eligibility_status",
+              "fieldValue": "not_verified"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        80
+      ],
+      "id": "5e8dcf85-b04e-40ae-8507-382c0390e3cf",
+      "name": "Supabase: Insert Scholarship Match",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get Profile').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "scholarships_matched"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        464,
+        256
+      ],
+      "id": "9cdb4b93-09c4-4a9b-a4af-9e9af43aabb7",
+      "name": "Supabase: Update Profile Status",
+      "retryOnFail": false,
+      "maxTries": 2,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "scholarships",
+        "limit": 5,
+        "filters": {
+          "conditions": []
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        80
+      ],
+      "id": "f4e74280-ba95-4cc8-895f-a65207b4f14b",
+      "name": "Get All Scholarships",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "domain_recommendations",
+        "limit": 10,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        80
+      ],
+      "id": "d0431063-45bc-4179-a4dc-642df5360856",
+      "name": "Get Domain Recommendation",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $json.profile_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        80
+      ],
+      "id": "f77cbc56-325d-42c4-b634-9233a8cc189a",
+      "name": "Get Profile",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "domain_recommendations",
+        "filters": {
+          "conditions": []
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        80
+      ],
+      "id": "c9a55733-13ed-4964-96a8-e2910ea1c408",
+      "name": "Get many rows",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Manual Trigger (swap for real trigger later)": [
+      {
+        "json": {
+          "domain_recommendation_id": "101079f7-3139-419c-a1a8-06b4e2e4f49f"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Manual Trigger (swap for real trigger later)": {
+      "main": [
+        [
+          {
+            "node": "Set Test Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Test Input": {
+      "main": [
+        [
+          {
+            "node": "Get Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Filter by Domain Tags": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Scholarships",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Scholarships": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Update Profile Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait (pacing)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (pacing)": {
+      "main": [
+        [
+          {
+            "node": "LLM: Evaluate Scholarship Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM: Evaluate Scholarship Match": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse LLM JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse LLM JSON": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Insert Scholarship Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Insert Scholarship Match": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Scholarships",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Scholarships": {
+      "main": [
+        [
+          {
+            "node": "Code: Filter by Domain Tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Domain Recommendation": {
+      "main": [
+        [
+          {
+            "node": "Get All Scholarships",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Profile": {
+      "main": [
+        [
+          {
+            "node": "Get many rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows": {
+      "main": [
+        [
+          {
+            "node": "Get Domain Recommendation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "cec66516-6f51-4771-9957-3ee512f366cc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "16ad8e6d3dac235c951169d34cce7ded120211f2d63b4db3cf48ed90e1221dd6"
+  },
+  "nodeGroups": [],
+  "id": "CSOkEUCKj46xMr7f",
+  "tags": []
+}

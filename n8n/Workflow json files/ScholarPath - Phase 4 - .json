@@ -1,0 +1,1269 @@
+{
+  "name": "ScholarPath - Phase 4 - Build Review Package + Send Approved Email",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1728,
+        -240
+      ],
+      "id": "7479eec0-14a6-45ed-b84c-cf6ee5d60c8f",
+      "name": "Manual Trigger (swap for real trigger later)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "profile-id",
+              "name": "profile_id",
+              "value": "bf00e4ed-6150-4b33-b9a6-bbb820f48bc0",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1504,
+        -240
+      ],
+      "id": "ad7347fc-bd9e-4ef4-9338-0eceb473feec",
+      "name": "Set Test Input"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $json.profile_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1280,
+        -240
+      ],
+      "id": "0c0cada9-3c99-4243-8ddb-f270461ecf9e",
+      "name": "Supabase: Get Profile",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "domain_recommendations",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "profile_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1056,
+        -240
+      ],
+      "id": "ebb5ef3b-0bab-43df-9f5f-900cf89db1f4",
+      "name": "Supabase: Get Domain Recommendation",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "papers",
+        "limit": 3,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "domain_recommendation_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -832,
+        -240
+      ],
+      "id": "b7d42827-2d8e-41ef-a8e6-08c1916d72f0",
+      "name": "Supabase: Get Top 3 Papers",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const profile = $('Supabase: Get Profile').first().json;\nconst domainRec = $('Supabase: Get Domain Recommendation').first().json;\nreturn $input.all().map(item => ({\n  json: {\n    ...item.json,\n    profile_id: profile.id,\n    structured_profile: profile.structured_profile,\n    domain: domainRec.domain,\n    domain_recommendation_id: domainRec.id\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        -240
+      ],
+      "id": "6a336c8c-6aa2-4e3b-b0bd-375a2245dc1a",
+      "name": "Code: Attach Profile Context"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -384,
+        -240
+      ],
+      "id": "d86a9516-38e4-40df-b88d-02833281e502",
+      "name": "Loop Over Papers"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -160,
+        -320
+      ],
+      "id": "9254ef39-90d0-4e79-ba0c-2a0021f81d1b",
+      "name": "Wait (pacing)",
+      "webhookId": "a8-wait-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: `You are identifying which author of this paper is likely to be the supervising professor/PI, based only on the information given. If affiliation data is missing, say so - do not guess a university. Do not invent an email address; only report contact_email if explicitly provided in the input. Base research_focus_summary only on this paper's abstract.\\n\\nReturn ONLY valid JSON, no markdown fences:\\n{\\n  \\\"likely_pi_name\\\": \\\"string or null\\\",\\n  \\\"affiliation\\\": \\\"string or null\\\",\\n  \\\"affiliation_confidence\\\": \\\"high|medium|low|unknown\\\",\\n  \\\"research_focus_summary\\\": \\\"string\\\",\\n  \\\"notes\\\": \\\"string\\\"\\n}\\n\\nPAPER TITLE: ${$('Loop Over Papers').item.json.title}\\nABSTRACT: ${$('Loop Over Papers').item.json.abstract}\\nAUTHORS: ${JSON.stringify($('Loop Over Papers').item.json.authors)}` }] }] }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        288,
+        -320
+      ],
+      "id": "963a3b42-f9af-451b-a4c2-ec13faf32721",
+      "name": "LLM: Extract Professor Candidate",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GmARygcg2M2pbVZ9",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const raw = $input.first().json.candidates[0].content.parts[0].text;\n  const cleaned = raw.replace(/```json|```/g, '').trim();\n  const parsed = JSON.parse(cleaned);\n  return [{ json: { ...parsed, _parse_ok: true } }];\n} catch (err) {\n  return [{ json: { _parse_ok: false, likely_pi_name: null, error: err.message } }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        -320
+      ],
+      "id": "8f33e2cc-80ea-46c3-be40-9a445641bc61",
+      "name": "Code: Parse LLM JSON"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-name",
+              "leftValue": "={{ $json.likely_pi_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        736,
+        -240
+      ],
+      "id": "e5aadc91-d972-4f46-a0df-0fefef01e6f8",
+      "name": "IF: Has likely_pi_name"
+    },
+    {
+      "parameters": {
+        "tableId": "professors",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "paper_id",
+              "fieldValue": "={{ $('Loop Over Papers').item.json.id }}"
+            },
+            {
+              "fieldId": "name",
+              "fieldValue": "={{ $json.likely_pi_name }}"
+            },
+            {
+              "fieldId": "affiliation",
+              "fieldValue": "={{ $json.affiliation }}"
+            },
+            {
+              "fieldId": "affiliation_source",
+              "fieldValue": "web_search"
+            },
+            {
+              "fieldId": "research_focus_summary",
+              "fieldValue": "={{ $json.research_focus_summary }}"
+            },
+            {
+              "fieldId": "identification_confidence",
+              "fieldValue": "={{ $json.affiliation_confidence === 'unknown' ? 'low' : $json.affiliation_confidence }}"
+            },
+            {
+              "fieldId": "identification_notes",
+              "fieldValue": "={{ $json.notes }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        960,
+        -240
+      ],
+      "id": "ada146f9-2c7b-4032-af9d-a262600510ef",
+      "name": "Supabase: Insert Professor",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "professors",
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "paper_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Loop Over Papers').item.json.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        -240
+      ],
+      "id": "72f295fd-b2d2-4c47-a552-4c6d90464a63",
+      "name": "Supabase: Get Best Professor (this paper)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: `You are drafting a short, professional outreach email from a prospective graduate student to a professor, for the student to personally review and approve before any sending happens.\\n\\nSTRICT RULES:\\n1. Never state or imply the professor is actively recruiting or has funding available unless explicitly provided as verified fact.\\n2. Never fabricate a shared connection or overstate familiarity with their work.\\n3. Reference the professor's actual paper by real title and describe what it found in plain terms, grounded only in the summary given.\\n4. Reference the student's genuinely relevant background, without inflating it.\\n5. Keep it under 200 words, specific and modest, no generic flattery.\\n6. End with a clear, low-pressure ask.\\n\\nReturn ONLY valid JSON, no markdown fences:\\n{ \\\"subject\\\": \\\"string\\\", \\\"body\\\": \\\"string\\\" }\\n\\nPROFESSOR NAME: ${$json.name}\\nPROFESSOR'S PAPER TITLE: ${$('Loop Over Papers').item.json.title}\\nPROFESSOR'S PAPER SUMMARY: ${$('Loop Over Papers').item.json.plain_summary}\\nSTUDENT'S BACKGROUND: ${JSON.stringify($('Code: Attach Profile Context').item.json.structured_profile)}\\nSTUDENT'S DOMAIN: ${$('Code: Attach Profile Context').item.json.domain}` }] }] }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1408,
+        -240
+      ],
+      "id": "9483a826-c5b6-45bd-8c6f-824977bf7c4c",
+      "name": "LLM: Draft Outreach Email",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GmARygcg2M2pbVZ9",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const raw = $input.first().json.candidates[0].content.parts[0].text;\n  const cleaned = raw.replace(/```json|```/g, '').trim();\n  return [{ json: JSON.parse(cleaned) }];\n} catch (err) {\n  return [{ json: { subject: null, body: null, _parse_error: err.message } }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        -240
+      ],
+      "id": "eb782c3d-d480-4263-bc09-55044f1d958b",
+      "name": "Code: Parse Email JSON"
+    },
+    {
+      "parameters": {
+        "tableId": "review_packages",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "profile_id",
+              "fieldValue": "={{ $('Code: Attach Profile Context').item.json.profile_id }}"
+            },
+            {
+              "fieldId": "professor_id",
+              "fieldValue": "={{ $('Supabase: Get Best Professor (this paper)').item.json.id }}"
+            },
+            {
+              "fieldId": "domain_recommendation_id",
+              "fieldValue": "={{ $('Code: Attach Profile Context').item.json.domain_recommendation_id }}"
+            },
+            {
+              "fieldId": "drafted_email_subject",
+              "fieldValue": "={{ $json.subject }}"
+            },
+            {
+              "fieldId": "drafted_email_body",
+              "fieldValue": "={{ $json.body }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending_review"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1856,
+        -240
+      ],
+      "id": "fa45889d-74c8-418d-9d70-26d261d26774",
+      "name": "Supabase: Insert Review Package",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Code: Attach Profile Context').item.json.profile_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "awaiting_review"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2080,
+        -240
+      ],
+      "id": "27b0c6f8-cf51-4278-807c-feb751074c5f",
+      "name": "Supabase: Update Profile Status",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "send-approved-email",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1728,
+        176
+      ],
+      "id": "5fe31b4b-3826-4102-b0b0-7ce623a0ecaa",
+      "name": "Webhook (from dashboard Approve button)",
+      "webhookId": "send-approved-email"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "review_packages",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "profile_id",
+              "keyValue": "={{ $json.body.profile_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1504,
+        176
+      ],
+      "id": "3fbf9eb5-5fa8-4354-9007-b66139a872c8",
+      "name": "Supabase: Get Review Package",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "professors",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $json.professor_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1280,
+        176
+      ],
+      "id": "644d548b-cc8b-4f14-b82a-640a5b375ce2",
+      "name": "Supabase: Get Professor",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "status-approved",
+              "leftValue": "={{ $('Supabase: Get Review Package').first().json.status }}",
+              "rightValue": "approved",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "has-email",
+              "leftValue": "={{ $json.contact_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1056,
+        176
+      ],
+      "id": "74a3f4a0-8785-409c-a708-b4c33b8608f9",
+      "name": "IF: Approved AND Has Email"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.contact_email }}",
+        "subject": "={{ $('Supabase: Get Review Package').first().json.edited_email_subject || $('Supabase: Get Review Package').first().json.drafted_email_subject }}",
+        "message": "={{ $('Supabase: Get Review Package').first().json.edited_email_body || $('Supabase: Get Review Package').first().json.drafted_email_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -832,
+        80
+      ],
+      "id": "e37d0ec9-ae24-4327-b596-f41b2cee5c0c",
+      "name": "Gmail: Send Email",
+      "webhookId": "5cbe6b03-ac83-40fe-ad10-b9a9652660cf",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZA9sS3hJz3c7JhQo",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "no-error",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -608,
+        80
+      ],
+      "id": "b6bbb9d7-9481-412a-a8f4-36b79bd20ceb",
+      "name": "IF: Send Succeeded"
+    },
+    {
+      "parameters": {
+        "tableId": "sent_emails",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "review_package_id",
+              "fieldValue": "={{ $('Supabase: Get Review Package').first().json.id }}"
+            },
+            {
+              "fieldId": "sent_to",
+              "fieldValue": "={{ $('Supabase: Get Professor').first().json.contact_email }}"
+            },
+            {
+              "fieldId": "subject",
+              "fieldValue": "={{ $('Supabase: Get Review Package').first().json.edited_email_subject || $('Supabase: Get Review Package').first().json.drafted_email_subject }}"
+            },
+            {
+              "fieldId": "body",
+              "fieldValue": "={{ $('Supabase: Get Review Package').first().json.edited_email_body || $('Supabase: Get Review Package').first().json.drafted_email_body }}"
+            },
+            {
+              "fieldId": "gmail_message_id",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldId": "send_status",
+              "fieldValue": "success"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -16
+      ],
+      "id": "7b9ee54d-3ebd-4fc7-8794-f8d33a9892f2",
+      "name": "Supabase: Log Sent Email (success)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "review_packages",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Supabase: Get Review Package').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "sent"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -16
+      ],
+      "id": "c7478939-f9ed-4a0c-926c-f620d6644308",
+      "name": "Supabase: Update Package Status (sent)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Supabase: Get Review Package').first().json.profile_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "completed"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        64,
+        -16
+      ],
+      "id": "a23725a8-9272-47a5-b3e6-6e7f3c6b5221",
+      "name": "Supabase: Update Profile Status (completed)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "sent_emails",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "review_package_id",
+              "fieldValue": "={{ $('Supabase: Get Review Package').first().json.id }}"
+            },
+            {
+              "fieldId": "sent_to",
+              "fieldValue": "={{ $('Supabase: Get Professor').first().json.contact_email }}"
+            },
+            {
+              "fieldId": "subject",
+              "fieldValue": "={{ $('Supabase: Get Review Package').first().json.edited_email_subject || $('Supabase: Get Review Package').first().json.drafted_email_subject }}"
+            },
+            {
+              "fieldId": "body",
+              "fieldValue": "={{ $('Supabase: Get Review Package').first().json.edited_email_body || $('Supabase: Get Review Package').first().json.drafted_email_body }}"
+            },
+            {
+              "fieldId": "send_status",
+              "fieldValue": "failed"
+            },
+            {
+              "fieldId": "error_message",
+              "fieldValue": "={{ $json.error }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        176
+      ],
+      "id": "fc7482ad-c250-46c5-a921-7cceddd9cec3",
+      "name": "Supabase: Log Sent Email (failed)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "review_packages",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Supabase: Get Review Package').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "send_failed"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        176
+      ],
+      "id": "0908a009-2fdc-4c5e-b91f-cf13d7c8fa63",
+      "name": "Supabase: Update Package Status (send_failed)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        288,
+        -16
+      ],
+      "id": "897efe99-5de1-43d0-a370-19132d0908da",
+      "name": "Respond: Success"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, error: 'Send failed or approval check did not pass' } }}",
+        "options": {
+          "responseCode": 502
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        64,
+        176
+      ],
+      "id": "c7322c70-a5a4-4251-bcab-ab82eb38f74c",
+      "name": "Respond: Failure"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, error: 'Not approved or no contact email on file - refusing to send' } }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -832,
+        272
+      ],
+      "id": "0af1f683-567d-44db-8ee3-67deb3d8370d",
+      "name": "Respond: Blocked"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.openalex.org/works",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "search",
+              "value": "={{ $json.domain }}"
+            },
+            {
+              "name": "filter",
+              "value": "=from_publication_date:2020-01-01,to_publication_date:2026-12-31"
+            },
+            {
+              "name": "per-page",
+              "value": "4"
+            },
+            {
+              "name": "mailto",
+              "value": "your-example@example.com"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "cCgzboGnSekiGUPZQHrNP3"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        64,
+        -320
+      ],
+      "id": "8ad4ab89-0672-4051-8153-006b906b20c4",
+      "name": "OpenAxel Author Lookup",
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger (swap for real trigger later)": {
+      "main": [
+        [
+          {
+            "node": "Set Test Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Test Input": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Get Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Get Profile": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Get Domain Recommendation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Get Domain Recommendation": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Get Top 3 Papers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Get Top 3 Papers": {
+      "main": [
+        [
+          {
+            "node": "Code: Attach Profile Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Attach Profile Context": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Papers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Papers": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Wait (pacing)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (pacing)": {
+      "main": [
+        [
+          {
+            "node": "OpenAxel Author Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM: Extract Professor Candidate": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse LLM JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse LLM JSON": {
+      "main": [
+        [
+          {
+            "node": "IF: Has likely_pi_name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Has likely_pi_name": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Insert Professor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Papers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Insert Professor": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Get Best Professor (this paper)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Get Best Professor (this paper)": {
+      "main": [
+        [
+          {
+            "node": "LLM: Draft Outreach Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM: Draft Outreach Email": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse Email JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse Email JSON": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Insert Review Package",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Insert Review Package": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Update Profile Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook (from dashboard Approve button)": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Get Review Package",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Get Review Package": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Get Professor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Get Professor": {
+      "main": [
+        [
+          {
+            "node": "IF: Approved AND Has Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Approved AND Has Email": {
+      "main": [
+        [
+          {
+            "node": "Gmail: Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Blocked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Send Email": {
+      "main": [
+        [
+          {
+            "node": "IF: Send Succeeded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Send Succeeded": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Log Sent Email (success)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase: Log Sent Email (failed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Log Sent Email (success)": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Update Package Status (sent)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Update Package Status (sent)": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Update Profile Status (completed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Update Profile Status (completed)": {
+      "main": [
+        [
+          {
+            "node": "Respond: Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Log Sent Email (failed)": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Update Package Status (send_failed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Update Package Status (send_failed)": {
+      "main": [
+        [
+          {
+            "node": "Respond: Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAxel Author Lookup": {
+      "main": [
+        [
+          {
+            "node": "LLM: Extract Professor Candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "e61b6be5-fbed-490a-87b2-ff2842d3b8ec",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "16ad8e6d3dac235c951169d34cce7ded120211f2d63b4db3cf48ed90e1221dd6"
+  },
+  "nodeGroups": [],
+  "id": "x7qTvnxVbs2JTNgM",
+  "tags": []
+}

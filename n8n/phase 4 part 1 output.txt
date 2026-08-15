@@ -1,0 +1,16 @@
+[
+  {
+    "id": "3ec6a080-436e-4952-83f6-08105c94d442",
+    "profile_id": "bf00e4ed-6150-4b33-b9a6-bbb820f48bc0",
+    "professor_id": "4e73518f-157f-40f2-a9f0-461a60b1876b",
+    "domain_recommendation_id": "101079f7-3139-419c-a1a8-06b4e2e4f49f",
+    "drafted_email_subject": "Inquiry regarding your work on the Transformers library",
+    "drafted_email_body": "Dear Professor Rush,\n\nI am a prospective graduate student interested in Natural Language Processing and have been following your work on the Transformers library. I recently read your paper, \"Transformers: State-of-the-Art Natural Language Processing,\" and found the demonstration of how the library streamlines the implementation and sharing of complex language models particularly insightful for the research community.\n\nI am currently exploring programs for further study and would welcome the opportunity to learn more about your current research focus. If your schedule permits, would you be available for a brief conversation regarding your lab's work? I understand you are busy, so please let me know if there is a more appropriate time or way to connect.\n\nThank you for your time and consideration.\n\nBest regards,\n\n[Your Name]",
+    "edited_email_subject": null,
+    "edited_email_body": null,
+    "status": "pending_review",
+    "reviewer_notes": null,
+    "reviewed_at": null,
+    "created_at": "2026-08-15T12:03:41.277487+00:00"
+  }
+]

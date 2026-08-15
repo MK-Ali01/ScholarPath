@@ -1,0 +1,205 @@
+the status is updated with "Matched Scholarships " and their details are added to Database.
+
+Scholarship Update output:
+[
+  {
+    "id": "072ca111-d3b0-4a43-ba1d-6a17e2459c72",
+    "profile_id": "bf00e4ed-6150-4b33-b9a6-bbb820f48bc0",
+    "scholarship_id": "6db161c2-1cd4-40da-b302-e78c1aee228d",
+    "domain_recommendation_id": "00008fa0-640a-4afa-9aef-c67848e43745",
+    "match_confidence": "low",
+    "match_reasoning": "LLM response could not be parsed - needs manual review",
+    "country_eligibility_status": "not_verified",
+    "matched_at": "2026-08-15T10:55:07.404169+00:00"
+  }
+]
+
+
+Profile Updates:
+
+[
+  {
+    "id": "bf00e4ed-6150-4b33-b9a6-bbb820f48bc0",
+    "github_username": "cactus-compute",
+    "cv_file_path": "cvs/1786729935051-MKAli Resume_Python_dev.pdf",
+    "raw_cv_text": "MUHAMMAD KHIZER ALI\nPython Developer\nkhizerali600@gmail.com | +92-3261979791 | Rawalpindi, Pakistan\ngithub.com/MK-Ali01 | linkedin.com/in/mkhizer-ali11\nPROFESSIONAL SUMMARY\nSkilled Python Developer with extensive experience building robust backend systems, APIs,\nand full-stack applications. Proficient in FastAPI, python libraries, and RESTful service\ndevelopment with strong foundation in clean code practices and design patterns. Experienced in\nbuilding scalable solutions with focus on performance, security, and maintainability.\nDemonstrated ability to architect and deploy production-ready applications.\nPROFESSIONAL EXPERIENCE\nBackend Developer / AI Integration Engineer\nElevvo Pathways, Islamabad\nFeb 2026 – Mar 2026\n• Developed ML-powered backend services using Python, TensorFlow, and Scikit-learn\nfor predictive analytics\n• Built scalable data preprocessing pipelines and API endpoints for ML model deployment\n• Implemented REST APIs with FastAPI for real-time model inference and data\nprocessing\nProject Lead - Automation & System Engineering\nN.C.A.I, NUST, Islamabad\nMar 2022 – Oct 2022\n• Led development of Python-based automation systems and embedded applications\n• Managed system architecture design, testing, debugging, and deployment workflows\nEDUCATION\nBachelor of Science in Information Technology\nNUML | 2023 – Present | CGPA: 3.5/4.0\nTECHNICAL SKILLS\nPython Development: FastAPI, Flask, Django, OOP, Clean Code\nBackend Frameworks: REST APIs, Microservices, API Design, Request Handling\nData & ML Integration: Pandas, NumPy, Scikit-learn, TensorFlow, Data Processing\nDatabases: MySQL, Database Design, Query Optimization\nCloud & DevOps: Google Cloud Platform, Docker, Docker Compose, Deployment\nVersion Control: Git, GitHub, Collaboration, Code Review\n\nOther Languages: JavaScript, Java, SQL, Bash, HTML/CSS\nBACKEND & PYTHON PROJECTS\nAI Medical Diagnosis Agent\nApr 2025\n• Built intelligent medical decision system using Python with NLP processing and heuristic\nsearch algorithms. Implemented logic-based reasoning engine for diagnostic prediction.\nDesigned modular architecture for scalability and maintenance. Technologies: Python,\nNLP, Machine Learning, AI Logic\nStock Sentinel - Financial Prediction System\nJun 2025\n• Developed ML backend for financial prediction using Python. Built data preprocessing\npipelines with Pandas and NumPy. Implemented REST APIs for model serving using\nFastAPI. Engineered feature engineering workflows for prediction accuracy.\nTechnologies: Python, FastAPI, Pandas, Scikit-learn, MySQL\nCIRO Crisis Management System Backend\nMay 2026\n• Architected scalable backend microservices for crisis management platform. Built REST\nAPIs handling real-time data processing. Implemented Docker containerization for\nconsistent deployments across environments. Deployed on GCP with cloud-native\ndesign patterns. Technologies: Python, FastAPI, Docker, GCP, Microservices\nCareerIQ Pro Backend\nApr 2026\n• Developed backend infrastructure for AI-driven career platform during GDG Hackathon.\nBuilt REST APIs with FastAPI for rapid development. Implemented database schema\nand query optimization. Integrated ML models for career recommendations.\nTechnologies: Python, FastAPI, MySQL, API Design\nCERTIFICATIONS & AWARDS\n• Team Lead – Google Antigravity Hackathon, Islamabad (May 2026)\n• AI For Everyone Certification – DeepLearning.ai (June 2025)\n• ChatGPT + Excel Certification – Coursera (Sept 2025)",
+    "github_data": {
+      "user": {
+        "id": 196640840,
+        "bio": "Tiny AI For TIny Devices",
+        "blog": "https://cactuscompute.com",
+        "name": "Cactus Compute, Inc.",
+        "login": "cactus-compute",
+        "company": null,
+        "html_url": "https://github.com/cactus-compute",
+        "location": "United Kingdom",
+        "followers": 445,
+        "following": 0,
+        "public_gists": 0,
+        "public_repos": 19
+      },
+      "repos": [
+        {
+          "name": "Cactus Compute, Inc.",
+          "topics": [],
+          "html_url": "https://github.com/cactus-compute",
+          "created_at": "2025-01-27T11:58:35Z",
+          "updated_at": "2026-08-13T18:23:09Z"
+        }
+      ],
+      "languages": []
+    },
+    "structured_profile": {
+      "skills": [],
+      "projects": [],
+      "education": [],
+      "publications": [],
+      "extraction_notes": "The input variables $json.raw_cv_text and $json.github_data were not provided in the prompt, resulting in an empty extraction.",
+      "apparent_interests": [],
+      "technical_strengths": []
+    },
+    "status": "scholarships_matched",
+    "error_log": [],
+    "created_at": "2026-08-14T17:52:17.852518+00:00",
+    "updated_at": "2026-08-15T10:55:07.626781+00:00",
+    "candidate_country": null
+  },
+  {
+    "id": "bf00e4ed-6150-4b33-b9a6-bbb820f48bc0",
+    "github_username": "cactus-compute",
+    "cv_file_path": "cvs/1786729935051-MKAli Resume_Python_dev.pdf",
+    "raw_cv_text": "MUHAMMAD KHIZER ALI\nPython Developer\nkhizerali600@gmail.com | +92-3261979791 | Rawalpindi, Pakistan\ngithub.com/MK-Ali01 | linkedin.com/in/mkhizer-ali11\nPROFESSIONAL SUMMARY\nSkilled Python Developer with extensive experience building robust backend systems, APIs,\nand full-stack applications. Proficient in FastAPI, python libraries, and RESTful service\ndevelopment with strong foundation in clean code practices and design patterns. Experienced in\nbuilding scalable solutions with focus on performance, security, and maintainability.\nDemonstrated ability to architect and deploy production-ready applications.\nPROFESSIONAL EXPERIENCE\nBackend Developer / AI Integration Engineer\nElevvo Pathways, Islamabad\nFeb 2026 – Mar 2026\n• Developed ML-powered backend services using Python, TensorFlow, and Scikit-learn\nfor predictive analytics\n• Built scalable data preprocessing pipelines and API endpoints for ML model deployment\n• Implemented REST APIs with FastAPI for real-time model inference and data\nprocessing\nProject Lead - Automation & System Engineering\nN.C.A.I, NUST, Islamabad\nMar 2022 – Oct 2022\n• Led development of Python-based automation systems and embedded applications\n• Managed system architecture design, testing, debugging, and deployment workflows\nEDUCATION\nBachelor of Science in Information Technology\nNUML | 2023 – Present | CGPA: 3.5/4.0\nTECHNICAL SKILLS\nPython Development: FastAPI, Flask, Django, OOP, Clean Code\nBackend Frameworks: REST APIs, Microservices, API Design, Request Handling\nData & ML Integration: Pandas, NumPy, Scikit-learn, TensorFlow, Data Processing\nDatabases: MySQL, Database Design, Query Optimization\nCloud & DevOps: Google Cloud Platform, Docker, Docker Compose, Deployment\nVersion Control: Git, GitHub, Collaboration, Code Review\n\nOther Languages: JavaScript, Java, SQL, Bash, HTML/CSS\nBACKEND & PYTHON PROJECTS\nAI Medical Diagnosis Agent\nApr 2025\n• Built intelligent medical decision system using Python with NLP processing and heuristic\nsearch algorithms. Implemented logic-based reasoning engine for diagnostic prediction.\nDesigned modular architecture for scalability and maintenance. Technologies: Python,\nNLP, Machine Learning, AI Logic\nStock Sentinel - Financial Prediction System\nJun 2025\n• Developed ML backend for financial prediction using Python. Built data preprocessing\npipelines with Pandas and NumPy. Implemented REST APIs for model serving using\nFastAPI. Engineered feature engineering workflows for prediction accuracy.\nTechnologies: Python, FastAPI, Pandas, Scikit-learn, MySQL\nCIRO Crisis Management System Backend\nMay 2026\n• Architected scalable backend microservices for crisis management platform. Built REST\nAPIs handling real-time data processing. Implemented Docker containerization for\nconsistent deployments across environments. Deployed on GCP with cloud-native\ndesign patterns. Technologies: Python, FastAPI, Docker, GCP, Microservices\nCareerIQ Pro Backend\nApr 2026\n• Developed backend infrastructure for AI-driven career platform during GDG Hackathon.\nBuilt REST APIs with FastAPI for rapid development. Implemented database schema\nand query optimization. Integrated ML models for career recommendations.\nTechnologies: Python, FastAPI, MySQL, API Design\nCERTIFICATIONS & AWARDS\n• Team Lead – Google Antigravity Hackathon, Islamabad (May 2026)\n• AI For Everyone Certification – DeepLearning.ai (June 2025)\n• ChatGPT + Excel Certification – Coursera (Sept 2025)",
+    "github_data": {
+      "user": {
+        "id": 196640840,
+        "bio": "Tiny AI For TIny Devices",
+        "blog": "https://cactuscompute.com",
+        "name": "Cactus Compute, Inc.",
+        "login": "cactus-compute",
+        "company": null,
+        "html_url": "https://github.com/cactus-compute",
+        "location": "United Kingdom",
+        "followers": 445,
+        "following": 0,
+        "public_gists": 0,
+        "public_repos": 19
+      },
+      "repos": [
+        {
+          "name": "Cactus Compute, Inc.",
+          "topics": [],
+          "html_url": "https://github.com/cactus-compute",
+          "created_at": "2025-01-27T11:58:35Z",
+          "updated_at": "2026-08-13T18:23:09Z"
+        }
+      ],
+      "languages": []
+    },
+    "structured_profile": {
+      "skills": [],
+      "projects": [],
+      "education": [],
+      "publications": [],
+      "extraction_notes": "The input variables $json.raw_cv_text and $json.github_data were not provided in the prompt, resulting in an empty extraction.",
+      "apparent_interests": [],
+      "technical_strengths": []
+    },
+    "status": "scholarships_matched",
+    "error_log": [],
+    "created_at": "2026-08-14T17:52:17.852518+00:00",
+    "updated_at": "2026-08-15T10:55:08.79061+00:00",
+    "candidate_country": null
+  },
+  {
+    "id": "bf00e4ed-6150-4b33-b9a6-bbb820f48bc0",
+    "github_username": "cactus-compute",
+    "cv_file_path": "cvs/1786729935051-MKAli Resume_Python_dev.pdf",
+    "raw_cv_text": "MUHAMMAD KHIZER ALI\nPython Developer\nkhizerali600@gmail.com | +92-3261979791 | Rawalpindi, Pakistan\ngithub.com/MK-Ali01 | linkedin.com/in/mkhizer-ali11\nPROFESSIONAL SUMMARY\nSkilled Python Developer with extensive experience building robust backend systems, APIs,\nand full-stack applications. Proficient in FastAPI, python libraries, and RESTful service\ndevelopment with strong foundation in clean code practices and design patterns. Experienced in\nbuilding scalable solutions with focus on performance, security, and maintainability.\nDemonstrated ability to architect and deploy production-ready applications.\nPROFESSIONAL EXPERIENCE\nBackend Developer / AI Integration Engineer\nElevvo Pathways, Islamabad\nFeb 2026 – Mar 2026\n• Developed ML-powered backend services using Python, TensorFlow, and Scikit-learn\nfor predictive analytics\n• Built scalable data preprocessing pipelines and API endpoints for ML model deployment\n• Implemented REST APIs with FastAPI for real-time model inference and data\nprocessing\nProject Lead - Automation & System Engineering\nN.C.A.I, NUST, Islamabad\nMar 2022 – Oct 2022\n• Led development of Python-based automation systems and embedded applications\n• Managed system architecture design, testing, debugging, and deployment workflows\nEDUCATION\nBachelor of Science in Information Technology\nNUML | 2023 – Present | CGPA: 3.5/4.0\nTECHNICAL SKILLS\nPython Development: FastAPI, Flask, Django, OOP, Clean Code\nBackend Frameworks: REST APIs, Microservices, API Design, Request Handling\nData & ML Integration: Pandas, NumPy, Scikit-learn, TensorFlow, Data Processing\nDatabases: MySQL, Database Design, Query Optimization\nCloud & DevOps: Google Cloud Platform, Docker, Docker Compose, Deployment\nVersion Control: Git, GitHub, Collaboration, Code Review\n\nOther Languages: JavaScript, Java, SQL, Bash, HTML/CSS\nBACKEND & PYTHON PROJECTS\nAI Medical Diagnosis Agent\nApr 2025\n• Built intelligent medical decision system using Python with NLP processing and heuristic\nsearch algorithms. Implemented logic-based reasoning engine for diagnostic prediction.\nDesigned modular architecture for scalability and maintenance. Technologies: Python,\nNLP, Machine Learning, AI Logic\nStock Sentinel - Financial Prediction System\nJun 2025\n• Developed ML backend for financial prediction using Python. Built data preprocessing\npipelines with Pandas and NumPy. Implemented REST APIs for model serving using\nFastAPI. Engineered feature engineering workflows for prediction accuracy.\nTechnologies: Python, FastAPI, Pandas, Scikit-learn, MySQL\nCIRO Crisis Management System Backend\nMay 2026\n• Architected scalable backend microservices for crisis management platform. Built REST\nAPIs handling real-time data processing. Implemented Docker containerization for\nconsistent deployments across environments. Deployed on GCP with cloud-native\ndesign patterns. Technologies: Python, FastAPI, Docker, GCP, Microservices\nCareerIQ Pro Backend\nApr 2026\n• Developed backend infrastructure for AI-driven career platform during GDG Hackathon.\nBuilt REST APIs with FastAPI for rapid development. Implemented database schema\nand query optimization. Integrated ML models for career recommendations.\nTechnologies: Python, FastAPI, MySQL, API Design\nCERTIFICATIONS & AWARDS\n• Team Lead – Google Antigravity Hackathon, Islamabad (May 2026)\n• AI For Everyone Certification – DeepLearning.ai (June 2025)\n• ChatGPT + Excel Certification – Coursera (Sept 2025)",
+    "github_data": {
+      "user": {
+        "id": 196640840,
+        "bio": "Tiny AI For TIny Devices",
+        "blog": "https://cactuscompute.com",
+        "name": "Cactus Compute, Inc.",
+        "login": "cactus-compute",
+        "company": null,
+        "html_url": "https://github.com/cactus-compute",
+        "location": "United Kingdom",
+        "followers": 445,
+        "following": 0,
+        "public_gists": 0,
+        "public_repos": 19
+      },
+      "repos": [
+        {
+          "name": "Cactus Compute, Inc.",
+          "topics": [],
+          "html_url": "https://github.com/cactus-compute",
+          "created_at": "2025-01-27T11:58:35Z",
+          "updated_at": "2026-08-13T18:23:09Z"
+        }
+      ],
+      "languages": []
+    },
+    "structured_profile": {
+      "skills": [],
+      "projects": [],
+      "education": [],
+      "publications": [],
+      "extraction_notes": "The input variables $json.raw_cv_text and $json.github_data were not provided in the prompt, resulting in an empty extraction.",
+      "apparent_interests": [],
+      "technical_strengths": []
+    },
+    "status": "scholarships_matched",
+    "error_log": [],
+    "created_at": "2026-08-14T17:52:17.852518+00:00",
+    "updated_at": "2026-08-15T10:55:09.012299+00:00",
+    "candidate_country": null
+  },
+  {
+    "id": "bf00e4ed-6150-4b33-b9a6-bbb820f48bc0",
+    "github_username": "cactus-compute",
+    "cv_file_path": "cvs/1786729935051-MKAli Resume_Python_dev.pdf",
+    "raw_cv_text": "MUHAMMAD KHIZER ALI\nPython Developer\nkhizerali600@gmail.com | +92-3261979791 | Rawalpindi, Pakistan\ngithub.com/MK-Ali01 | linkedin.com/in/mkhizer-ali11\nPROFESSIONAL SUMMARY\nSkilled Python Developer with extensive experience building robust backend systems, APIs,\nand full-stack applications. Proficient in FastAPI, python libraries, and RESTful service\ndevelopment with strong foundation in clean code practices and design patterns. Experienced in\nbuilding scalable solutions with focus on performance, security, and maintainability.\nDemonstrated ability to architect and deploy production-ready applications.\nPROFESSIONAL EXPERIENCE\nBackend Developer / AI Integration Engineer\nElevvo Pathways, Islamabad\nFeb 2026 – Mar 2026\n• Developed ML-powered backend services using Python, TensorFlow, and Scikit-learn\nfor predictive analytics\n• Built scalable data preprocessing pipelines and API endpoints for ML model deployment\n• Implemented REST APIs with FastAPI for real-time model inference and data\nprocessing\nProject Lead - Automation & System Engineering\nN.C.A.I, NUST, Islamabad\nMar 2022 – Oct 2022\n• Led development of Python-based automation systems and embedded applications\n• Managed system architecture design, testing, debugging, and deployment workflows\nEDUCATION\nBachelor of Science in Information Technology\nNUML | 2023 – Present | CGPA: 3.5/4.0\nTECHNICAL SKILLS\nPython Development: FastAPI, Flask, Django, OOP, Clean Code\nBackend Frameworks: REST APIs, Microservices, API Design, Request Handling\nData & ML Integration: Pandas, NumPy, Scikit-learn, TensorFlow, Data Processing\nDatabases: MySQL, Database Design, Query Optimization\nCloud & DevOps: Google Cloud Platform, Docker, Docker Compose, Deployment\nVersion Control: Git, GitHub, Collaboration, Code Review\n\nOther Languages: JavaScript, Java, SQL, Bash, HTML/CSS\nBACKEND & PYTHON PROJECTS\nAI Medical Diagnosis Agent\nApr 2025\n• Built intelligent medical decision system using Python with NLP processing and heuristic\nsearch algorithms. Implemented logic-based reasoning engine for diagnostic prediction.\nDesigned modular architecture for scalability and maintenance. Technologies: Python,\nNLP, Machine Learning, AI Logic\nStock Sentinel - Financial Prediction System\nJun 2025\n• Developed ML backend for financial prediction using Python. Built data preprocessing\npipelines with Pandas and NumPy. Implemented REST APIs for model serving using\nFastAPI. Engineered feature engineering workflows for prediction accuracy.\nTechnologies: Python, FastAPI, Pandas, Scikit-learn, MySQL\nCIRO Crisis Management System Backend\nMay 2026\n• Architected scalable backend microservices for crisis management platform. Built REST\nAPIs handling real-time data processing. Implemented Docker containerization for\nconsistent deployments across environments. Deployed on GCP with cloud-native\ndesign patterns. Technologies: Python, FastAPI, Docker, GCP, Microservices\nCareerIQ Pro Backend\nApr 2026\n• Developed backend infrastructure for AI-driven career platform during GDG Hackathon.\nBuilt REST APIs with FastAPI for rapid development. Implemented database schema\nand query optimization. Integrated ML models for career recommendations.\nTechnologies: Python, FastAPI, MySQL, API Design\nCERTIFICATIONS & AWARDS\n• Team Lead – Google Antigravity Hackathon, Islamabad (May 2026)\n• AI For Everyone Certification – DeepLearning.ai (June 2025)\n• ChatGPT + Excel Certification – Coursera (Sept 2025)",
+    "github_data": {
+      "user": {
+        "id": 196640840,
+        "bio": "Tiny AI For TIny Devices",
+        "blog": "https://cactuscompute.com",
+        "name": "Cactus Compute, Inc.",
+        "login": "cactus-compute",
+        "company": null,
+        "html_url": "https://github.com/cactus-compute",
+        "location": "United Kingdom",
+        "followers": 445,
+        "following": 0,
+        "public_gists": 0,
+        "public_repos": 19
+      },
+      "repos": [
+        {
+          "name": "Cactus Compute, Inc.",
+          "topics": [],
+          "html_url": "https://github.com/cactus-compute",
+          "created_at": "2025-01-27T11:58:35Z",
+          "updated_at": "2026-08-13T18:23:09Z"
+        }
+      ],
+      "languages": []
+    },
+    "structured_profile": {
+      "skills": [],
+      "projects": [],
+      "education": [],
+      "publications": [],
+      "extraction_notes": "The input variables $json.raw_cv_text and $json.github_data were not provided in the prompt, resulting in an empty extraction.",
+      "apparent_interests": [],
+      "technical_strengths": []
+    },
+    "status": "scholarships_matched",
+    "error_log": [],
+    "created_at": "2026-08-14T17:52:17.852518+00:00",
+    "updated_at": "2026-08-15T10:55:09.243643+00:00",
+    "candidate_country": null
+  }
+]

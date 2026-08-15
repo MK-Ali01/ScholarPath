@@ -1,0 +1,799 @@
+{
+  "name": "Scholar Path",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "ScholarPath Intake",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "CV_File",
+              "fieldType": "file",
+              "fieldName": "CV File",
+              "acceptFileTypes": "pdf, jpg",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Github Username",
+              "fieldName": "Github Username",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "id": "1caf9b51-ccd1-44d0-be29-3e741ad10587",
+      "name": "On form submission",
+      "webhookId": "edb5e6f1-7af2-46ad-bc69-2718a3cabcc6",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://cvjchlzkxjnelxhohzfu.supabase.co/storage/v1/object/cvs/{{ Date.now() }}-{{ encodeURIComponent($binary.CV_File.fileName) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2amNobHpreGpuZWx4aG9oemZ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NjYwNzQzOCwiZXhwIjoyMTAyMTgzNDM4fQ.p-b9QQ89xVQMxeUwxLn5oIeB-hMrdadbYm5efyV54uw"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2amNobHpreGpuZWx4aG9oemZ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NjYwNzQzOCwiZXhwIjoyMTAyMTgzNDM4fQ.p-b9QQ89xVQMxeUwxLn5oIeB-hMrdadbYm5efyV54uw"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "CV_File",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        208,
+        -16
+      ],
+      "id": "66719284-18c6-4858-8f8f-2a102dd56f82",
+      "name": "Upload CV to Supabase Storage"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "CV_File",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        832,
+        32
+      ],
+      "id": "b0674016-4a80-4c95-a895-3c3420022b50",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// ScholarPath Phase 1\n// Build the canonical profile enrichment object\n// ============================================================\n\nfunction getFirst(nodeName) {\n  const items = $(nodeName).all();\n  return items.length ? items[0].json : null;\n}\n\nfunction getAll(nodeName) {\n  return $(nodeName).all().map(item => item.json);\n}\n\n// ------------------------------------------------------------\n// 1. Supabase profile created earlier\n// ------------------------------------------------------------\n\nconst profileRow = getFirst(\"Create a row\");\n\nif (!profileRow) {\n  throw new Error(\"Create a row output is unavailable.\");\n}\n\nconst profileId =\n  profileRow.id ||\n  profileRow.data?.id;\n\nif (!profileId) {\n  throw new Error(\n    \"Supabase profile ID was not found in Create a row output.\"\n  );\n}\n\n// ------------------------------------------------------------\n// 2. CV extraction\n// ------------------------------------------------------------\n\nconst cv = getFirst(\"Extract from File\");\n\nconst rawCvText =\n  cv?.text ||\n  \"\";\n\nif (!rawCvText.trim()) {\n  throw new Error(\n    \"Extract From File returned no CV text.\"\n  );\n}\n\n// ------------------------------------------------------------\n// 3. GitHub user\n// ------------------------------------------------------------\n\nconst githubUser = getFirst(\"GitHub User Info\");\n\nconst normalizedUser = githubUser?.login\n  ? {\n      login: githubUser.login,\n      id: githubUser.id,\n      name: githubUser.name,\n      bio: githubUser.bio,\n      company: githubUser.company,\n      location: githubUser.location,\n      blog: githubUser.blog,\n      public_repos: githubUser.public_repos,\n      public_gists: githubUser.public_gists,\n      followers: githubUser.followers,\n      following: githubUser.following,\n      html_url: githubUser.html_url\n    }\n  : null;\n\n// ------------------------------------------------------------\n// 4. GitHub repositories\n// ------------------------------------------------------------\n\nconst repoItems = getAll(\"GitHub Repos\");\n\nconst repos = repoItems\n  .filter(repo => repo?.name)\n  .map(repo => ({\n    name: repo.name,\n    full_name: repo.full_name,\n    description: repo.description,\n    html_url: repo.html_url,\n    language: repo.language,\n    stargazers_count: repo.stargazers_count,\n    forks_count: repo.forks_count,\n    topics: repo.topics || [],\n    created_at: repo.created_at,\n    updated_at: repo.updated_at,\n    private: repo.private\n  }));\n\n// ------------------------------------------------------------\n// 5. Calculate languages\n// ------------------------------------------------------------\n\nconst languageCounts = {};\n\nfor (const repo of repos) {\n  if (!repo.language) continue;\n\n  languageCounts[repo.language] =\n    (languageCounts[repo.language] || 0) + 1;\n}\n\nconst languages = Object.entries(languageCounts)\n  .sort((a, b) => b[1] - a[1])\n  .map(([language, repository_count]) => ({\n    language,\n    repository_count\n  }));\n\n// ------------------------------------------------------------\n// 6. Final canonical object\n// ------------------------------------------------------------\n\nreturn [\n  {\n    json: {\n      profile_id: profileId,\n\n      raw_cv_text: rawCvText,\n\n      github_data: normalizedUser\n        ? {\n            user: normalizedUser,\n            repos,\n            languages\n          }\n        : null,\n\n      metadata: {\n        cv_available: true,\n        github_available: !!normalizedUser,\n        repository_count: repos.length,\n        language_count: languages.length\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        -32
+      ],
+      "id": "3fdf3690-a2e6-4f46-abda-0c7ef6b43a22",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/users/{{ $('On form submission').item.json['Github Username'] }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "CV_File",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        784,
+        -192
+      ],
+      "id": "24d158c3-9743-45b8-aa4c-80547a869522",
+      "name": "GitHub User Info",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "githubApi": {
+          "id": "jcz1uf6PefxerCTg",
+          "name": "GitHub account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "notes": "this is retry"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/users/{{ $('On form submission').item.json['Github Username'] }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        944,
+        -224
+      ],
+      "id": "3aa86abd-bad4-48a9-b398-6c748acf7585",
+      "name": "GitHub Repos",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "githubApi": {
+          "id": "jcz1uf6PefxerCTg",
+          "name": "GitHub account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "notes": "retry 2"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.profile_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "github_data",
+              "fieldValue": "={{ $json.github_data }}"
+            },
+            {
+              "fieldId": "raw_cv_text",
+              "fieldValue": "={{ $json.raw_cv_text }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        0
+      ],
+      "id": "1cd63c63-b620-4531-b045-8ed4d76223b5",
+      "name": "Update Profile - GitHub + CV",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "AQ.Ab8RN6JnqYnLnXUCw0g4AN_uk4lMZ6aEQS0zT2BkJTrWZ6JfNg"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"system_instruction\": {\n    \"parts\": [\n      {\n        \"text\": \"You are extracting a structured profile from a person's CV text and GitHub data.\\n\\nOnly use information explicitly present in the input — never invent skills, degrees, or projects that aren't mentioned. If a field can't be determined, use an empty array or null, not a guess.\\n\\nReturn ONLY valid JSON, no markdown fences, no commentary, matching this shape:\\n\\n{\\n  \\\"skills\\\": [\\\"string\\\", ...],\\n  \\\"education\\\": [\\n    { \\\"degree\\\": \\\"string\\\", \\\"field\\\": \\\"string\\\", \\\"institution\\\": \\\"string\\\", \\\"year\\\": \\\"string or null\\\" }\\n  ],\\n  \\\"projects\\\": [\\n    { \\\"name\\\": \\\"string\\\", \\\"description\\\": \\\"string\\\", \\\"technologies\\\": [\\\"string\\\", ...] }\\n  ],\\n  \\\"publications\\\": [\\\"string\\\", ...],\\n  \\\"technical_strengths\\\": [\\\"string\\\", ...],\\n  \\\"apparent_interests\\\": [\\\"string\\\", ...],\\n  \\\"extraction_notes\\\": \\\"string — flag anything ambiguous, missing, or low-confidence\\\"\\n}\"\n      }\n    ]\n  },\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \"CV TEXT:\\n{{ $json.raw_cv_text }}\\n\\nGITHUB DATA (repos, languages, README excerpts):\\n{{ JSON.stringify($json.github_data) }}\"\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"temperature\": 0.1,\n    \"responseMimeType\": \"application/json\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1728,
+        16
+      ],
+      "id": "593803ef-4711-498b-8dba-adfa6b6088d0",
+      "name": "Gemini - Structure Profile",
+      "retryOnFail": true,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GmARygcg2M2pbVZ9",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Node 10 — Parse Gemini Profile JSON\n\nlet raw = null;\n\ntry {\n  // Gemini response:\n  // candidates[0].content.parts[0].text\n  raw = $json?.candidates?.[0]?.content?.parts?.[0]?.text;\n\n  if (!raw) {\n    throw new Error('Gemini returned no text content');\n  }\n\n  // Remove markdown fences if Gemini happens to return them\n  const cleaned = raw\n    .replace(/```json/gi, '')\n    .replace(/```/g, '')\n    .trim();\n\n  const structuredProfile = JSON.parse(cleaned);\n\n return {\n  json: {\n    profile_id: $('Create a row').item.json.id,\n    structured_profile: structuredProfile,\n    _parse_error: false\n  }\n};\n\n} catch (err) {\n\n  return {\n    json: {\n      structured_profile: null,\n      _parse_error: true,\n      message: err.message,\n      raw: raw\n    }\n  };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        16
+      ],
+      "id": "a192c21d-63d0-4d89-bbe9-74b2269c2c24",
+      "name": "Parse Profile JSON"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.profile_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "structured_profile",
+              "fieldValue": "={{ $json.structured_profile }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "profile_extracted"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2176,
+        96
+      ],
+      "id": "80a937e8-d63f-4cd9-a7a5-77d2f9555edf",
+      "name": "Update a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://cvjchlzkxjnelxhohzfu.supabase.co/storage/v1/object/authenticated/{{ encodeURIComponent($json.cv_file_path).replace(/%2F/g, '/') }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_secret_1quf6h3gDKuJI7zTXkzM0g_zl5ZEW8c"
+            },
+            {
+              "name": "Authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2amNobHpreGpuZWx4aG9oemZ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NjYwNzQzOCwiZXhwIjoyMTAyMTgzNDM4fQ.p-b9QQ89xVQMxeUwxLn5oIeB-hMrdadbYm5efyV54uw"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "CV_File"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        624,
+        -16
+      ],
+      "id": "a298fd93-6829-47ba-8d28-d28c135b3c9f",
+      "name": "HTTP Request",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "AQ.Ab8RN6JnqYnLnXUCw0g4AN_uk4lMZ6aEQS0zT2BkJTrWZ6JfNg"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"system_instruction\": {\n    \"parts\": [\n      {\n        \"text\": \"You are ScholarPath's academic research-domain recommendation engine. You advise prospective MS/MPhil applicants on suitable research directions based ONLY on the structured candidate profile provided in the user message.\\n\\nTASK:\\nRecommend the 3 most suitable academic/research domains for this candidate.\\n\\nGROUNDING REQUIREMENTS:\\n1. Every recommendation MUST be supported by specific evidence in the structured profile.\\n2. Use actual skills, projects, education, work experience, publications, research interests, tools, technologies, or other relevant information present in the profile.\\n3. NEVER invent skills, projects, publications, research experience, degrees, interests, or achievements.\\n4. Do not recommend a domain merely because it is popular or generally associated with the candidate's degree.\\n5. If the profile provides strong evidence for only one domain, return only one recommendation.\\n6. Prefer specific research domains over broad fields. For example, prefer \\\"Natural Language Processing\\\" or \\\"Computer Vision\\\" over \\\"Computer Science\\\" when the profile supports the specific domain.\\n7. Recommendations should represent meaningful academic/research directions that could later be used for finding relevant papers, professors, research groups, and graduate opportunities.\\n\\nCONFIDENCE:\\nUse exactly one of these values:\\n- \\\"high\\\" = strong and direct evidence in the profile\\n- \\\"medium\\\" = reasonable evidence exists, but some relevant information is limited or indirect\\n- \\\"low\\\" = weak or indirect evidence; use this only when necessary\\n\\nREASONING:\\nFor every recommendation, provide 2 to 3 concise sentences explaining WHY the candidate fits the domain. Reference concrete evidence from the supplied profile. Do not make claims that cannot be supported by the profile.\\n\\nQUALITY RULES:\\n- Return 1 to 3 recommendations only.\\n- Do not return duplicate or near-duplicate domains.\\n- Rank recommendations implicitly by relevance: the first recommendation must be the strongest match, followed by the next strongest.\\n- Do NOT include a numeric rank field. The workflow will assign rank deterministically after parsing.\\n- Do not include generic domains such as \\\"Computer Science\\\", \\\"Information Technology\\\", or \\\"Software Engineering\\\" unless the profile contains unusually strong evidence that specifically justifies the broader domain.\\n\\nSTRICT OUTPUT FORMAT:\\nReturn EXACTLY ONE valid JSON object.\\n\\nReturn NOTHING before the JSON object.\\nReturn NOTHING after the JSON object.\\nDo NOT use Markdown.\\nDo NOT use ```json code fences.\\nDo NOT include comments.\\nDo NOT include explanations outside the JSON.\\nDo NOT return multiple JSON objects.\\nDo NOT add trailing commas.\\nDo NOT add any fields that are not specified in the schema.\\n\\nThe response MUST match this structure:\\n{\\n  \\\"recommendations\\\": [\\n    {\\n      \\\"domain\\\": \\\"specific academic/research domain\\\",\\n      \\\"reasoning\\\": \\\"2-3 sentences grounded in specific profile evidence\\\",\\n      \\\"confidence\\\": \\\"high\\\"\\n    }\\n  ]\\n}\\n\\nThe recommendations array MUST contain between 1 and 3 objects.\\nThe confidence value MUST be exactly \\\"high\\\", \\\"medium\\\", or \\\"low\\\".\\n\\nBefore producing the final response, internally verify that:\\n1. The JSON is syntactically valid.\\n2. There is exactly one top-level JSON object.\\n3. The recommendations array contains 1 to 3 objects.\\n4. Every object contains exactly domain, reasoning, and confidence.\\n5. Every recommendation is supported by evidence in the structured profile.\\n6. There is no text before or after the JSON.\"\n      }\n    ]\n  },\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \"STRUCTURED PROFILE:\\n{{ JSON.stringify($json.structured_profile) }}\"\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"responseMimeType\": \"application/json\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2464,
+        80
+      ],
+      "id": "78060b46-44c9-48be-80f8-39611c1de868",
+      "name": "Gemini - Recommend Domain",
+      "retryOnFail": true,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GmARygcg2M2pbVZ9",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.profile_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "domain_recommended"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3504,
+        96
+      ],
+      "id": "f8976599-369e-4845-ab9b-51fb20b42cdb",
+      "name": "Update a row1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        2464,
+        416
+      ],
+      "id": "81cf0d76-c638-4830-acf7-42862510339d",
+      "name": "Error Trigger",
+      "onError": "continueRegularOutput",
+      "notes": "`{ step, error_message, timestamp }` appended to the failing profile's\n\n   `error_log` column\n\n2. Sets `status: 'faile"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "structured_profile.recommendations",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        3008,
+        240
+      ],
+      "id": "d2b77e66-b5e9-4432-bc70-aaf61b759b01",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1104,
+        -32
+      ],
+      "id": "b5d75077-1bbf-402c-960d-324837e4d135",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "tableId": "profiles",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "github_username",
+              "fieldValue": "={{ $('On form submission').first().json['Github Username'] }}"
+            },
+            {
+              "fieldId": "cv_file_path",
+              "fieldValue": "={{ $('Upload CV to Supabase Storage').item.json.Key }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "intake_complete"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        400,
+        -16
+      ],
+      "id": "046fc50f-c292-442f-b875-9c36c9690808",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let raw = null;\n\ntry {\n  // Gemini response\n  raw = $json?.candidates?.[0]?.content?.parts?.[0]?.text;\n\n  if (!raw) {\n    throw new Error('Gemini returned no text content');\n  }\n\n  // Remove markdown fences if present\n  const cleaned = raw\n    .replace(/```json/gi, '')\n    .replace(/```/g, '')\n    .trim();\n\n  const recommendations = JSON.parse(cleaned);\n\n  // Validate expected structure\n  if (!recommendations || !Array.isArray(recommendations.recommendations)) {\n    throw new Error(\n      'Invalid Gemini JSON: recommendations array is missing'\n    );\n  }\n\n  if (recommendations.recommendations.length === 0) {\n    throw new Error(\n      'Gemini returned an empty recommendations array'\n    );\n  }\n\n  return {\n    json: {\n      profile_id: $('Create a row').first().json.id,\n      structured_profile: recommendations,\n      _parse_error: false\n    }\n  };\n\n} catch (err) {\n\n  return {\n    json: {\n      profile_id: $('Create a row').first().json.id,\n      structured_profile: null,\n      _parse_error: true,\n      message: err.message,\n      raw: raw\n    }\n  };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2752,
+        96
+      ],
+      "id": "5ed03948-bf49-404e-a82d-3193b813c077",
+      "name": "Parse Domain JSON"
+    },
+    {
+      "parameters": {
+        "tableId": "domain_recommendations",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "profile_id",
+              "fieldValue": "={{ $json.profile_id }}"
+            },
+            {
+              "fieldId": "domain",
+              "fieldValue": "={{ $json[\"structured_profile.recommendations\"].domain }}"
+            },
+            {
+              "fieldId": "reasoning",
+              "fieldValue": "={{ $json[\"structured_profile.recommendations\"].reasoning }}"
+            },
+            {
+              "fieldId": "=rank",
+              "fieldValue": "={{ $itemIndex + 1 }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3248,
+        208
+      ],
+      "id": "539fb97a-0d05-4d1b-a8da-1ef58479c7b9",
+      "name": "Create a row1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "domain_recommendations",
+        "limit": 3,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3536,
+        240
+      ],
+      "id": "6cc5fc39-8e7e-421e-ba45-7d2c25b58722",
+      "name": "Get profile",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Upload CV to Supabase Storage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload CV to Supabase Storage": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "GitHub User Info": {
+      "main": [
+        [
+          {
+            "node": "GitHub Repos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub Repos": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Update Profile - GitHub + CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Profile - GitHub + CV": {
+      "main": [
+        [
+          {
+            "node": "Gemini - Structure Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini - Structure Profile": {
+      "main": [
+        [
+          {
+            "node": "Parse Profile JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Profile JSON": {
+      "main": [
+        [
+          {
+            "node": "Update a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a row": {
+      "main": [
+        [
+          {
+            "node": "Gemini - Recommend Domain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "GitHub User Info",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini - Recommend Domain": {
+      "main": [
+        [
+          {
+            "node": "Parse Domain JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Create a row1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Domain JSON": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row1": {
+      "main": [
+        [
+          {
+            "node": "Update a row1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a row1": {
+      "main": [
+        []
+      ]
+    },
+    "Get profile": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "bb214205-4728-4598-89b6-030cbfdece7c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "16ad8e6d3dac235c951169d34cce7ded120211f2d63b4db3cf48ed90e1221dd6"
+  },
+  "nodeGroups": [],
+  "id": "JLnpyz3BWgWxL65D",
+  "tags": []
+}

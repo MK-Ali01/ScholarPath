@@ -1,0 +1,610 @@
+{
+  "name": "Scholar path 2",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        16
+      ],
+      "id": "a6cd51c6-7b69-4cf5-bd58-d746d0070cbc",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "domain_recommendations",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $json.domain_recommendations_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        208,
+        16
+      ],
+      "id": "fe5ae6d1-371b-4816-b430-ee224a3ef333",
+      "name": "Get a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        432,
+        16
+      ],
+      "id": "3df2c91b-fd9f-4ad8-9d6f-fe81c0eac3ea",
+      "name": "Wait",
+      "webhookId": "f2a3ecde-5387-4c5d-909f-56f2415c937a"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a79ae49e-e982-4eed-bbdf-3a993bd8e61f",
+              "leftValue": "={{ Array.isArray($json.results) && $json.results.length > 0 }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        880,
+        16
+      ],
+      "id": "dc054915-8abd-471c-b43e-407902fcbc61",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        96
+      ],
+      "id": "d73ab097-cab8-45b0-8f45-e4dde3a2ff9e",
+      "name": "XML",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1500,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1552,
+        16
+      ],
+      "id": "9caa28e5-766a-4f5d-a57e-6f4826a32873",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1776,
+        16
+      ],
+      "id": "5077d6f0-bfc7-4d3f-9716-6e571f2962bc",
+      "name": "Wait1",
+      "webhookId": "bf307a2c-cec9-4fcb-b8a9-fc4327fa6919"
+    },
+    {
+      "parameters": {
+        "jsCode": "let raw = null;\n\ntry {\n  raw = $json?.candidates?.[0]?.content?.parts?.[0]?.text;\n\n  if (!raw) {\n    throw new Error('Gemini returned no text content');\n  }\n\n  const cleaned = raw\n    .replace(/```json/gi, '')\n    .replace(/```/g, '')\n    .trim();\n\n  const result = JSON.parse(cleaned);\n\n  if (!result.plain_summary) {\n    throw new Error('Missing plain_summary');\n  }\n\n  if (!['high', 'medium', 'low'].includes(result.relevance_confidence)) {\n    throw new Error('Invalid relevance_confidence');\n  }\n\n  if (!result.relevance_reasoning) {\n    throw new Error('Missing relevance_reasoning');\n  }\n\n  const paper = $('Loop Over Items').item.json;\n\n  return {\n    json: {\n      source: paper.source,\n      external_id: paper.external_id,\n      title: paper.title,\n      abstract: paper.abstract,\n      authors: paper.authors,\n      venue: paper.venue,\n      publication_year: paper.publication_year,\n      citation_count: paper.citation_count,\n      url: paper.url,\n      domain: paper.domain,\n\n      // IMPORTANT\n      domain_recommendation_id: paper.domain_recommendation_id,\n\n      plain_summary: result.plain_summary,\n      relevance_confidence: result.relevance_confidence,\n      relevance_reasoning: result.relevance_reasoning,\n\n      _parse_error: false\n    }\n  };\n\n} catch (err) {\n\n  const paper = $('Loop Over Items').item.json;\n\n  return {\n    json: {\n      ...paper,\n\n      plain_summary: null,\n      relevance_confidence: 'low',\n      relevance_reasoning:\n        'LLM response could not be parsed: ' + err.message,\n\n      _parse_error: true,\n      _parse_message: err.message,\n      _raw_llm_response: raw\n    }\n  };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2224,
+        16
+      ],
+      "id": "bed4b168-55e6-48ac-bdca-f0618fa9d27c",
+      "name": "Code in JavaScript1",
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "tableId": "papers",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "domain_recommendation_id",
+              "fieldValue": "={{ $json.domain_recommendation_id }}"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "={{ $json.source }}"
+            },
+            {
+              "fieldId": "external_id",
+              "fieldValue": "={{ $json.external_id }}"
+            },
+            {
+              "fieldId": "abstract",
+              "fieldValue": "={{ $json.abstract }}"
+            },
+            {
+              "fieldId": "authors",
+              "fieldValue": "={{ $json.authors }}"
+            },
+            {
+              "fieldId": "venue",
+              "fieldValue": "={{ $json.venue }}"
+            },
+            {
+              "fieldId": "publication_year",
+              "fieldValue": "={{ $json.publication_year }}"
+            },
+            {
+              "fieldId": "citation_count",
+              "fieldValue": "={{ $json.citation_count }}"
+            },
+            {
+              "fieldId": "url",
+              "fieldValue": "={{ $json.url }}"
+            },
+            {
+              "fieldId": "plain_summary",
+              "fieldValue": "={{ $json.plain_summary }}"
+            },
+            {
+              "fieldId": "relevance_confidence",
+              "fieldValue": "={{ $json.relevance_confidence }}"
+            },
+            {
+              "fieldId": "relevance_reasoning",
+              "fieldValue": "={{ $json.relevance_reasoning }}"
+            },
+            {
+              "fieldId": "title",
+              "fieldValue": "={{ $json.title }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2448,
+        96
+      ],
+      "id": "40767f76-292b-4d8c-b359-56c769ddc019",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get a row').first().json.profile_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "id",
+              "fieldValue": "={{ $('Get a row').first().json.profile_id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "papers_found"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1936,
+        -176
+      ],
+      "id": "4f79dae1-84e3-4d9f-a095-bd605ce1f6c3",
+      "name": "Update a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Thq7Ors4dy6D5q9j",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "http://export.arxiv.org/api/query",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "search_query=",
+              "value": "=all:{{ $json.domain }}&sortBy=submittedDate&sortOrder=descending&max_results=10"
+            },
+            {
+              "name": "sortBy",
+              "value": "submittedDate"
+            },
+            {
+              "name": "sortOrder",
+              "value": "descending"
+            },
+            {
+              "name": "max_results",
+              "value": "10"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "ok"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1104,
+        96
+      ],
+      "id": "58b67470-f0fe-4bc0-b8b6-2a9d8ec3a351",
+      "name": "arXiv Fallback",
+      "retryOnFail": true,
+      "waitBetweenTries": 1500,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const domainRec = $('Get a row').first().json;\n\n\n// Get the recommendation ID\nconst domainRecommendationId =\n  $('Edit Fields').first().json.domain_recommendation_id ||\n  domainRec.id;\n\nconst results = $json.results || [];\n\nreturn results.map(paper => {\n\n  let abstract = '';\n\n  if (paper.abstract_inverted_index) {\n    const words = [];\n\n    for (const [word, positions] of Object.entries(\n      paper.abstract_inverted_index\n    )) {\n      for (const position of positions) {\n        words[position] = word;\n      }\n    }\n\n    abstract = words.filter(Boolean).join(' ');\n  }\n\n  const authors = (paper.authorships || []).map(author => ({\n    name: author.author?.display_name || ''\n  }));\n\n  return {\n    json: {\n      source: 'openalex',\n      external_id: paper.id || null,\n      title: paper.title || '',\n      abstract: abstract,\n\n      authors: authors,\n\n      venue:\n        paper.primary_location?.source?.display_name || '',\n\n      publication_year:\n        paper.publication_year || null,\n\n      citation_count:\n        paper.cited_by_count ?? null,\n\n      url:\n        paper.primary_location?.landing_page_url ||\n        paper.doi ||\n        paper.id ||\n        null,\n\n      domain:\n        domainRec.domain,\n\n      // MUST be preserved through Loop\n      domain_recommendation_id:\n        domainRecommendationId\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        -96
+      ],
+      "id": "38460f44-bbc8-44c3-a74a-2161babe302c",
+      "name": "Normalize Code Output"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"system_instruction\": {\n    \"parts\": [\n      {\n        \"text\": \"You are helping a prospective grad student quickly evaluate a research paper against their intended research domain.\\n\\nGiven the paper's abstract and the student's target domain, produce:\\n1. A plain-language summary (2-3 sentences, no jargon a non-specialist wouldn't understand — explain what the paper actually did and found).\\n2. A relevance judgment: how well this paper's actual content matches the stated domain — not just keyword overlap.\\n\\nBe honest about weak matches. If the abstract only tangentially relates to the domain, say so and mark relevance \\\"low\\\" — do not inflate relevance to seem more useful.\\n\\nReturn ONLY valid JSON, no markdown fences:\\n\\n{\\n  \\\"plain_summary\\\": \\\"string\\\",\\n  \\\"relevance_confidence\\\": \\\"high | medium | low\\\",\\n  \\\"relevance_reasoning\\\": \\\"string — one sentence on why this confidence level\\\"\\n}\"\n      }\n    ]\n  },\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \"TARGET DOMAIN: {{ $json.domain }}\\n\\nPAPER TITLE: {{ $json.title }}\\n\\nABSTRACT: {{ $json.abstract }}\"\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"responseMimeType\": \"application/json\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2000,
+        16
+      ],
+      "id": "78cb1c61-6d96-449b-b2c6-2eebfaa634aa",
+      "name": "LLM node2",
+      "retryOnFail": true,
+      "waitBetweenTries": 1500,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GmARygcg2M2pbVZ9",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://api.openalex.org/works",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "search",
+              "value": "={{ $json.domain }}"
+            },
+            {
+              "name": "per-page",
+              "value": "3"
+            },
+            {
+              "name": "filter",
+              "value": "from_publication_date:2020-01-01,to_publication_date:2026-12-31"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "cCgzboGnSekiGUPZQHrNP3"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        656,
+        16
+      ],
+      "id": "68801c80-47eb-453f-b146-cb55b69667ac",
+      "name": "OpenAlex",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7cd8e0a0-b4df-4896-bf69-43c6c45958d7",
+              "name": "domain_recommendations_id",
+              "value": "00008fa0-640a-4afa-9aef-c67848e43745",
+              "type": "string"
+            },
+            {
+              "id": "03ef141a-0d02-4d2c-b786-2aca784ea658",
+              "name": "domain",
+              "value": "Computer Vision",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -16,
+        16
+      ],
+      "id": "9490a9b5-9ceb-42e7-a781-667d40ceeef0",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "OpenAlex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Normalize Code Output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "arXiv Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Update a row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XML": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "LLM node2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "arXiv Fallback": {
+      "main": [
+        [
+          {
+            "node": "XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Code Output": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM node2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAlex": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "eb586b85-b626-4e6a-9f7c-e76ce1daf84f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "16ad8e6d3dac235c951169d34cce7ded120211f2d63b4db3cf48ed90e1221dd6"
+  },
+  "nodeGroups": [],
+  "id": "ScobvnpBAdDA9jc4",
+  "tags": []
+}

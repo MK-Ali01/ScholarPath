@@ -1,0 +1,26 @@
+[
+  {
+    "id": "101079f7-3139-419c-a1a8-06b4e2e4f49f",
+    "profile_id": "bf00e4ed-6150-4b33-b9a6-bbb820f48bc0",
+    "domain": "Natural Language Processing",
+    "reasoning": "The candidate's research experience in developing sentiment analysis models for social media data directly aligns with NLP research. Additionally, their proficiency in Python and deep learning frameworks like TensorFlow provides the technical foundation necessary for modern NLP investigations.",
+    "rank": 1,
+    "created_at": "2026-08-14T17:52:31.02326+00:00"
+  },
+  {
+    "id": "00008fa0-640a-4afa-9aef-c67848e43745",
+    "profile_id": "bf00e4ed-6150-4b33-b9a6-bbb820f48bc0",
+    "domain": "Computer Vision",
+    "reasoning": "The candidate completed a capstone project focused on real-time object detection in surveillance footage using OpenCV and CNN architectures. This direct experience with image processing and pattern recognition serves as a strong basis for advanced academic study in computer vision.",
+    "rank": 2,
+    "created_at": "2026-08-14T17:52:31.02326+00:00"
+  },
+  {
+    "id": "accfb191-4c0c-428c-b887-7da69e954052",
+    "profile_id": "bf00e4ed-6150-4b33-b9a6-bbb820f48bc0",
+    "domain": "Data Mining",
+    "reasoning": "The candidate has a track record of extracting insights from large-scale datasets through their work in social media sentiment analysis. Their mastery of SQL, data preprocessing, and statistical modeling is well-suited for academic inquiries into scalable data mining techniques.",
+    "rank": 3,
+    "created_at": "2026-08-14T17:52:31.02326+00:00"
+  }
+]

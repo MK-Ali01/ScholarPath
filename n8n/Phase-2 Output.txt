@@ -1,0 +1,50 @@
+[
+  {
+    "id": "e0d4f65b-84ef-4f9e-abff-47b7d8bb5677",
+    "domain_recommendation_id": "00008fa0-640a-4afa-9aef-c67848e43745",
+    "source": "openalex",
+    "external_id": "https://openalex.org/W3120894151",
+    "title": "Deep learning-enabled medical computer vision",
+    "abstract": "A decade of unprecedented progress in artificial intelligence (AI) has demonstrated the potential for many fields-including medicine-to benefit from the insights that AI techniques can extract from data. Here we survey recent progress in the development of modern computer vision techniques-powered by deep learning-for medical applications, focusing on medical imaging, medical video, and clinical deployment. We start by briefly summarizing a decade of progress in convolutional neural networks, including the vision tasks they enable, in the context of healthcare. Next, we discuss several example medical imaging applications that stand to benefit-including cardiology, pathology, dermatology, ophthalmology-and propose new avenues for continued work. We then expand into general medical video, highlighting ways in which clinical workflows can integrate computer vision to enhance care. Finally, we discuss the challenges and hurdles required for real-world clinical deployment of these technologies.",
+    "authors": [
+      {
+        "name": "Andre Esteva"
+      },
+      {
+        "name": "Katherine Chou"
+      },
+      {
+        "name": "Serena Yeung"
+      },
+      {
+        "name": "Nikhil Naik"
+      },
+      {
+        "name": "Ali Madani"
+      },
+      {
+        "name": "Ali Mottaghi"
+      },
+      {
+        "name": "Yun Liu"
+      },
+      {
+        "name": "Eric J. Topol"
+      },
+      {
+        "name": "Jeff Dean"
+      },
+      {
+        "name": "Richard Socher"
+      }
+    ],
+    "venue": "npj Digital Medicine",
+    "publication_year": 2021,
+    "citation_count": 1347,
+    "url": "https://doi.org/10.1038/s41746-020-00376-2",
+    "plain_summary": "This paper provides an overview of how deep learning technology is being used to analyze medical images and videos to support clinical tasks. It reviews current capabilities in fields like dermatology and cardiology while identifying the practical challenges involved in moving these tools into real-world hospital settings.",
+    "relevance_confidence": "high",
+    "relevance_reasoning": "The paper directly addresses the application of core computer vision techniques within the specific, high-impact domain of medical diagnostics and clinical workflows.",
+    "fetched_at": "2026-08-15T09:58:58.398324+00:00"
+  }
+]
